@@ -4,6 +4,7 @@
 from modules.core.props import Property, StepProperty
 from modules.core.step import StepBase
 from modules import cbpi
+import time
 
 ################################################################################
 @cbpi.step
@@ -32,7 +33,6 @@ class SimpleTargetStep(StepBase):
 
     #-------------------------------------------------------------------------------
     def init(self):
-        cbpi.app.logger.error("target init enter")
         try:
             self.set_target_temp(float(self.target), int(self.kettle))
         except:
@@ -125,6 +125,7 @@ class SimpleChillToTemp(StepBase):
 
         # set target temp
         self.set_target_temp(self.target, self.kettle)
+        self.start_time = time.time()
         self.actors_on()
 
     #-------------------------------------------------------------------------------
@@ -138,8 +139,16 @@ class SimpleChillToTemp(StepBase):
     #-------------------------------------------------------------------------------
     def execute(self):
         # Check if Target Temp is reached
-        if self.get_kettle_temp(self.kettle) <= self.target:
-            self.notify("Chill Temp Reached", "Starting the next step", timeout=None)
+        if float(self.get_kettle_temp(self.kettle)) <= self.target:
+            elapsed_time = int(time.time() - self.start_time)
+            hours, remainder = divmod(elapsed_time, 3600)
+            minutes, seconds = divmod(remainder, 60)
+            if hours:
+                elapsed_text = '{}:{:0>2d}:{:0>2d}'.format(hours, minutes, seconds)
+            else:
+                elapsed_text = '{}:{:0>2d}'.format(minutes, seconds)
+            self.notify("Chill temp reached in {}".format(elapsed_text),
+                        "Starting the next step", timeout=None)
             self.next()
 
     #-------------------------------------------------------------------------------
