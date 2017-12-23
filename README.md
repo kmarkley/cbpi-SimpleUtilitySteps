@@ -1,15 +1,19 @@
-# Notify Step
+## SimpleUtilitySteps
 
-A simple CraftBeerPi brew step that creates a customized notification and optionally pauses the brew.
+Simple CraftBeerPi3 brew steps to do a few useful additional things.
 
-### Example 1
+### SimpleManualStep
 
-Line 1: Prepare hop additions now!  
-Line 2: Continuing to boil step...  
-Next Step: Continue
+Display a customizable notification and optionally pause the steps.  Intended to tell you when to take some manual action not automated by CraftBeerPi.
 
-### Example 2
+### SimpleTargetStep
 
-Line 1: Insert immersion chiller now!  
-Line 2: Click next when done to start chilling  
-Next Step: Pause
+Set the Auto mode and/or Target Temperature of a kettle, without waiting for target to be met. For example, to start heating your sparge water somewhere in the middle of your brew steps.
+
+### SimpleActorTimer
+
+Turn on an actor for a specified time period.
+
+### SimpleChillToTemp
+
+Turn on an actor until temperature is _reduced_ to a target temperature.

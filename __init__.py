@@ -11,14 +11,14 @@ import time
 class SimpleManualStep(StepBase):
     # Properties
     heading = Property.Text("Heading", configurable=True, default_value="Step Alert", description="First line of notification.")
-    message = Property.Text("Message", configurable=True, default_value="Please press the next button to continue", description="Second line of notification.")
-    notifyType = Property.Select("Type", options=["success","warning","danger"])
+    message = Property.Text("Message", configurable=True, default_value="Press next button to continue", description="Second line of notification.")
+    notifyType = Property.Select("Type", options=["success","info","warning","danger"])
     proceed = Property.Select("Next Step", options=["Pause","Continue"], description="Whether or not to automatically continue to the next brew step.")
 
     #-------------------------------------------------------------------------------
     def init(self):
-        if self.notifyType not in ["success","warning","danger"]:
-            self.notifyType = "warning"
+        if self.notifyType not in ["success","info","warning","danger"]:
+            self.notifyType = "info"
         self.notify(self.heading, self.message, type=self.notifyType, timeout=None)
         if self.proceed == "Continue":
             self.next()
@@ -27,16 +27,13 @@ class SimpleManualStep(StepBase):
 @cbpi.step
 class SimpleTargetStep(StepBase):
     # Properties
-    auto_mode = Property.Select("Auto Mode", options=["Set to ON","Set to OFF","Leave Alone"])
+    auto_mode = Property.Select("Auto Mode", options=["Set to ON","Set to OFF","No Change"])
     kettle = StepProperty.Kettle("Kettle")
     target = Property.Number("Target Temp", configurable=True)
 
     #-------------------------------------------------------------------------------
     def init(self):
-        try:
-            self.set_target_temp(float(self.target), int(self.kettle))
-        except:
-            cbpi.notify("Error", "Failed to set target temp to {}".format(self.target), type="danger", timeout=None)
+        self.set_target_temp(float(self.target), int(self.kettle))
         if self.auto_mode == "Set to ON":
             self.setAutoMode(True)
         elif self.auto_mode == "Set to OFF":
@@ -90,11 +87,11 @@ class SimpleActorTimer(StepBase):
     def execute(self):
         # Check if Timer is Running
         if self.is_timer_finished() is None:
-            self.start_timer(int(self.timer) * 60)
+            self.start_timer(float(self.timer) * 60)
 
         # Check if timer finished and go to next step
         if self.is_timer_finished() == True:
-            self.notify("Timer Step Completed", "Starting the next step", timeout=None)
+            self.notify("{} complete".format(self.name), "Starting the next step", timeout=None)
             self.next()
 
     #-------------------------------------------------------------------------------
@@ -124,9 +121,13 @@ class SimpleChillToTemp(StepBase):
         self.kettle = int(self.kettle_prop)
 
         # set target temp
-        self.set_target_temp(self.target, self.kettle)
-        self.start_time = time.time()
-        self.actors_on()
+        if self.kettle:
+            self.set_target_temp(self.target, self.kettle)
+            self.start_time = time.time()
+            self.actors_on()
+        else:
+            cbpi.notify("No kettle defined", "Starting the next step", type="danger", timeout=None)
+            self.next()
 
     #-------------------------------------------------------------------------------
     def reset(self):
@@ -147,10 +148,11 @@ class SimpleChillToTemp(StepBase):
                 elapsed_text = '{}:{:0>2d}:{:0>2d}'.format(hours, minutes, seconds)
             else:
                 elapsed_text = '{}:{:0>2d}'.format(minutes, seconds)
-            self.notify("Chill temp reached in {}".format(elapsed_text),
-                        "Starting the next step", timeout=None)
+
+            self.notify("{} complete".format(self.name), "Chill temp reached in {}".format(elapsed_text), timeout=None)
             self.next()
 
+    #-------------------------------------------------------------------------------
     #-------------------------------------------------------------------------------
     def actors_on(self):
         for actor in self.actors:
