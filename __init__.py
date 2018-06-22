@@ -5,6 +5,11 @@ from modules.core.props import Property, StepProperty
 from modules.core.step import StepBase
 from modules import cbpi
 import time
+from os import system, listdir, remove
+
+LOG_DIR = "./logs/"
+APP_LOG = "app.log"
+LOG_SEP = "-=-"
 
 ################################################################################
 @cbpi.step
@@ -153,7 +158,6 @@ class SimpleChillToTemp(StepBase):
             self.next()
 
     #-------------------------------------------------------------------------------
-    #-------------------------------------------------------------------------------
     def actors_on(self):
         for actor in self.actors:
             try: self.actor_on(int(actor))
@@ -163,3 +167,34 @@ class SimpleChillToTemp(StepBase):
         for actor in self.actors:
             try: self.actor_off(int(actor))
             except: pass
+
+################################################################################
+@cbpi.step
+class SimpleClearLogsStep(StepBase):
+    #-------------------------------------------------------------------------------
+    def init(self):
+        log_names = listdir(LOG_DIR)
+        for log_name in log_names:
+            if (log_name[-4:] == ".log") and (log_name != APP_LOG) and (LOG_SEP not in log_name):
+                remove(LOG_DIR+log_name)
+
+        self.next()
+
+################################################################################
+@cbpi.step
+class SimpleSaveLogsStep(StepBase):
+
+    #-------------------------------------------------------------------------------
+    def init(self):
+        brew_name  = cbpi.get_config_parameter("brew_name", "")
+        if brew_name:
+            brew_name = "_".join(brew_name.split())
+        else:
+            brew_name = time.strftime("Brew_%Y_%m_%d")
+
+        log_names = listdir(LOG_DIR)
+        for log_name in log_names:
+            if (log_name[-4:] == ".log") and (log_name != APP_LOG) and (LOG_SEP not in log_name):
+                system("cat {} > {}".format(LOG_DIR+log_name, LOG_DIR+brew_name+LOG_SEP+log_name))
+
+        self.next()
